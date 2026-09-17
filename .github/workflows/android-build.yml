@@ -25,18 +25,22 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Make Gradle Wrapper executable
-        run: chmod +x ./gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
 
       - name: Verify project
         run: |
           test -f settings.gradle.kts
+          test -f build.gradle.kts
           test -f app/build.gradle.kts
-          test -f gradlew
           echo "Android project files verified."
+          echo "Gradle wrapper not required."
 
       - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon
+        run: |
+          gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Verify APK
         run: |
