@@ -1,0 +1,6 @@
+{
+  "name": "المحاسب الذكي",
+  "description": "تطبيق محاسبي وإداري احترافي بنظام أندرويد يعمل بدون إنترنت لإدارة المبيعات والمشتريات والمخزون والعملاء والموردين والسندات والتقارير والطباعة",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
