@@ -27,6 +27,36 @@ class AccountingRepository(private val db: AppDatabase) {
     suspend fun saveAccount(account: Account): Long = db.accountDao().insertAccount(account)
     suspend fun updateAccount(account: Account) = db.accountDao().updateAccount(account)
 
+    suspend fun ensureSystemAccounts(): Long {
+        val definitions = listOf(
+            "1100" to ("الصندوق الرئيسي" to "CASH"),
+            "1200" to ("البنك الرئيسي" to "BANK"),
+            "1300" to ("المخزون" to "INVENTORY"),
+            "4000" to ("إيرادات المبيعات" to "REVENUE"),
+            "4100" to ("مردودات المبيعات" to "SALES_RETURN"),
+            "5000" to ("المشتريات" to "PURCHASES"),
+            "5100" to ("تكلفة البضاعة المباعة" to "COGS"),
+            "5200" to ("مردودات المشتريات" to "PURCHASE_RETURN"),
+            "3000" to ("رأس المال" to "EQUITY")
+        )
+        for ((code, pair) in definitions) {
+            if (db.accountDao().getAccountByCode(code) == null) {
+                db.accountDao().insertAccount(
+                    Account(
+                        accountCode = code,
+                        name = pair.first,
+                        type = pair.second,
+                        openingBalance = 0.0,
+                        currentBalance = 0.0,
+                        notes = "حساب نظامي"
+                    )
+                )
+            }
+        }
+        return db.accountDao().getAccountByCode("1100")?.id
+            ?: error("تعذر إنشاء حساب الصندوق النظامي")
+    }
+
     // Account categories (organizational tags; never separate financial accounts)
     val accountCategories: Flow<List<AccountCategory>> = db.accountCategoryDao().getAll()
 
