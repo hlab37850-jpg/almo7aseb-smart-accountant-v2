@@ -5,6 +5,7 @@ import com.example.data.local.entities.*
 import com.example.domain.accounting.AccountingEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
 
