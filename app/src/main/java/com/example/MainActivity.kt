@@ -74,6 +74,15 @@ fun MainApp(viewModel: MainViewModel) {
         }
     }
 
+    LaunchedEffect(settings.companyName) {
+        if (settings.companyName.isNotBlank() && currentRoute == Screen.Settings.route) {
+            navController.navigate(Screen.Dashboard.route) {
+                popUpTo(Screen.Settings.route) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     // Determine if on top-level root screens
     val isRootScreen = currentRoute in listOf(
         Screen.Dashboard.route,
@@ -227,7 +236,7 @@ fun MainApp(viewModel: MainViewModel) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
+            startDestination = if (settings.companyName.isBlank()) Screen.Settings.route else Screen.Dashboard.route,
             modifier = Modifier.padding(padding)
         ) {
             // Dashboard
