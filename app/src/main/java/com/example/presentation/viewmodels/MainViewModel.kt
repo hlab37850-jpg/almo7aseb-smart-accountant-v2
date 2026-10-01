@@ -180,6 +180,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSettings(newSettings: CompanySettings) {
         viewModelScope.launch {
             val cashId = repository.ensureSystemAccounts()
+            repository.ensureSystemCategories()
             repository.updateSettings(newSettings.copy(defaultCashAccountId = cashId))
             _userMessage.emit("تم حفظ إعدادات المنشأة بنجاح")
         }
