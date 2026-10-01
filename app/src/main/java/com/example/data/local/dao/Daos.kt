@@ -198,6 +198,9 @@ interface VoucherDao {
     @Query("SELECT * FROM vouchers WHERE id = :id LIMIT 1")
     suspend fun getVoucherById(id: Long): Voucher?
 
+    @Query("SELECT * FROM vouchers WHERE voucherNumber = :number LIMIT 1")
+    suspend fun getVoucherByNumber(number: String): Voucher?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVoucher(voucher: Voucher): Long
 
