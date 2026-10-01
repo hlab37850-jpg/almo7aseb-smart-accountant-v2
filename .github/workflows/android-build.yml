@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -37,6 +40,10 @@ jobs:
           test -f app/build.gradle.kts
           echo "Android project files verified."
           echo "Gradle wrapper not required."
+
+      - name: Unit Tests
+        run: |
+          gradle :app:testDebugUnitTest --stacktrace --no-daemon
 
       - name: Build Debug APK
         run: |
