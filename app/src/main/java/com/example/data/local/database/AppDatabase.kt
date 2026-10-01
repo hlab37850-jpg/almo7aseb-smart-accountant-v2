@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import kotlinx.coroutines.CoroutineScope
 import com.example.data.local.dao.*
 import com.example.data.local.entities.*
 
@@ -61,9 +62,6 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE = instance
                 instance
             }
-        }
-    }
-}
         }
     }
 }
