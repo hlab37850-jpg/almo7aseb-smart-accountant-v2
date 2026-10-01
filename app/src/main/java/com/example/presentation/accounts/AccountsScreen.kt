@@ -91,14 +91,21 @@ fun AccountsScreen(viewModel: MainViewModel, onAccountClick: (Long) -> Unit) {
                 val key = tabs[page].first
                 val categoryId = key.removePrefix("CATEGORY:").toLongOrNull()
                 val customCategory = categoryId?.let { id -> customCategories.firstOrNull { it.id == id } }
+                val systemCategoryName = when (key) {
+                    "TRUST" -> "عملاء الثقة"
+                    "WHOLESALE" -> "عملاء الجملة"
+                    "RETAIL" -> "عملاء التجزئة"
+                    else -> null
+                }
+                val systemCategory = systemCategoryName?.let { name -> customCategories.firstOrNull { it.name == name } }
                 val list = when {
-                    customCategory != null -> viewModel.accountsForCategory(customCategory.id)
-                        .collectAsStateWithLifecycle(emptyList()).value
+                    customCategory != null -> viewModel.accountsForCategory(customCategory.id).collectAsStateWithLifecycle(emptyList()).value
+                    systemCategory != null -> viewModel.accountsForCategory(systemCategory.id).collectAsStateWithLifecycle(emptyList()).value
                     key == "CUSTOMER" -> customers
                     key == "SUPPLIER" -> suppliers
                     key == "CASH" -> cashAndBanks
                     key == "EXPENSE" -> expenses
-                    key == "REVENUE" -> allAccounts.filter { it.type == "REVENUE" }
+                    key == "REVENUE" -> allAccounts.filter { it.type == "REVENUE" || it.type == "SALES" }
                     key == "OVERDUE" -> customers.filter { it.currentBalance > 0.0 }
                     else -> emptyList()
                 }
