@@ -56,6 +56,7 @@ fun AccountsScreen(viewModel: MainViewModel, onAccountClick: (Long) -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
     var categoryAccount by remember { mutableStateOf<Account?>(null) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
     val currency = settings.baseCurrencySymbol
 
     Scaffold(
@@ -84,6 +85,9 @@ fun AccountsScreen(viewModel: MainViewModel, onAccountClick: (Long) -> Unit) {
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                         text = { Text(tab.second, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     )
+                }
+                IconButton(onClick = { showCategoryDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "إضافة تصنيف", tint = BluePrimary)
                 }
             }
 
@@ -196,6 +200,21 @@ fun AccountsScreen(viewModel: MainViewModel, onAccountClick: (Long) -> Unit) {
 
     categoryAccount?.let { account ->
         AccountCategoriesDialog(account, customCategories, viewModel) { categoryAccount = null }
+    }
+
+    if (showCategoryDialog) {
+        var name by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCategoryDialog = false },
+            title = { Text("إضافة تصنيف حسابات", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("اسم التصنيف") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            },
+            confirmButton = {
+                Button(onClick = { if (name.isNotBlank()) viewModel.createCategory(name.trim()) { showCategoryDialog = false } }, colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)) { Text("إضافة") }
+            },
+            dismissButton = { TextButton(onClick = { showCategoryDialog = false }) { Text("إلغاء") } }
+        )
     }
 }
 
