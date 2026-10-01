@@ -316,6 +316,9 @@ interface AccountCategoryDao {
     @Query("SELECT c.* FROM account_categories c INNER JOIN account_category_links l ON c.id = l.categoryId WHERE l.accountId = :accountId AND c.isActive = 1 ORDER BY c.sortOrder, c.name")
     fun getForAccount(accountId: Long): Flow<List<AccountCategory>>
 
+    @Query("SELECT a.* FROM accounts a INNER JOIN account_category_links l ON a.id = l.accountId WHERE l.categoryId = :categoryId AND a.isActive = 1 ORDER BY a.name")
+    fun getAccountsForCategory(categoryId: Long): Flow<List<Account>>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun link(link: AccountCategoryLink)
 
