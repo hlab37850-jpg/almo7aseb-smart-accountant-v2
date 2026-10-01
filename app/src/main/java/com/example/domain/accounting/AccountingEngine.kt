@@ -102,8 +102,14 @@ class AccountingEngine(private val db: AppDatabase) {
                 ?: error("حساب العميل أو المورد غير موجود")
 
             val cashAccount = db.accountDao().getAccountById(invoice.cashAccountId)
-                ?: db.accountDao().getCashAndBankAccounts().let { db.accountDao().getAccountById(1L) }
+                ?: db.accountDao().getCashAndBankAccounts().firstOrNull()
                 ?: error("حساب الصندوق غير موجود")
+
+            val salesAccount = db.accountDao().getAccountsByTypeDirect("REVENUE").firstOrNull()
+                ?: error("يجب إنشاء حساب إيرادات قبل تسجيل المبيعات")
+            val purchaseAccount = db.accountDao().getAccountsByTypeDirect("PURCHASES").firstOrNull()
+                ?: db.accountDao().getAccountsByTypeDirect("INVENTORY").firstOrNull()
+                ?: error("يجب إنشاء حساب مشتريات/مخزون قبل تسجيل المشتريات")
 
             val total = invoice.grandTotal
             val paid = invoice.paidAmount
@@ -307,10 +313,10 @@ class AccountingEngine(private val db: AppDatabase) {
                     if (remaining > 0) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = partyAccount.id, accountName = partyAccount.name, debit = remaining, credit = 0.0))
                     }
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = 9L, accountName = "إيرادات المبيعات", debit = 0.0, credit = total))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = salesAccount.id, accountName = salesAccount.name, debit = 0.0, credit = total))
                 }
                 "PURCHASE" -> {
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = 10L, accountName = "تكلفة المشتريات", debit = total, credit = 0.0))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = purchaseAccount.id, accountName = purchaseAccount.name, debit = total, credit = 0.0))
                     if (paid > 0) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = cashAccount.id, accountName = cashAccount.name, debit = 0.0, credit = paid))
                     }
@@ -319,7 +325,7 @@ class AccountingEngine(private val db: AppDatabase) {
                     }
                 }
                 "SALE_RETURN" -> {
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = 9L, accountName = "مردودات المبيعات", debit = total, credit = 0.0))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = salesAccount.id, accountName = "مردودات " + salesAccount.name, debit = total, credit = 0.0))
                     if (paid > 0) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = cashAccount.id, accountName = cashAccount.name, debit = 0.0, credit = paid))
                     } else {
@@ -332,7 +338,7 @@ class AccountingEngine(private val db: AppDatabase) {
                     } else {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = partyAccount.id, accountName = partyAccount.name, debit = total, credit = 0.0))
                     }
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = 10L, accountName = "مردودات المشتريات", debit = 0.0, credit = total))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = purchaseAccount.id, accountName = "مردودات " + purchaseAccount.name, debit = 0.0, credit = total))
                 }
             }
             db.journalEntryDao().insertLines(lines)
