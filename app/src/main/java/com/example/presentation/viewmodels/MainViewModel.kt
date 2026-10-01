@@ -285,6 +285,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun categoriesForAccount(accountId: Long): Flow<List<AccountCategory>> =
         repository.categoriesForAccount(accountId)
 
+    fun accountsForCategory(categoryId: Long): Flow<List<Account>> =
+        repository.accountsForCategory(categoryId)
+
     fun createCategory(name: String, description: String = "", onDone: (() -> Unit)? = null) {
         viewModelScope.launch {
             runCatching { repository.createCategory(name, description) }
