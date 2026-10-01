@@ -23,3 +23,6 @@ View your app in AI Studio: https://ai.studio/apps/d97e6d54-503b-4d53-bbb9-e6ba0
 
 
 <!-- CI verification trigger -->
+
+
+CI verification 2026-10-01: compile fixes.
