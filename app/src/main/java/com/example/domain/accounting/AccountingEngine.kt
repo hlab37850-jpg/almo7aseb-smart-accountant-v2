@@ -102,7 +102,8 @@ class AccountingEngine(private val db: AppDatabase) {
                 ?: error("حساب العميل أو المورد غير موجود")
 
             val cashAccount = db.accountDao().getAccountById(invoice.cashAccountId)
-                ?: db.accountDao().getCashAndBankAccounts().firstOrNull()
+                ?: db.accountDao().getAccountsByTypeDirect("CASH").firstOrNull()
+                ?: db.accountDao().getAccountsByTypeDirect("BANK").firstOrNull()
                 ?: error("حساب الصندوق غير موجود")
 
             val salesAccount = db.accountDao().getAccountsByTypeDirect("REVENUE").firstOrNull()
