@@ -8,16 +8,16 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "company_settings")
 data class CompanySettings(
     @PrimaryKey val id: Long = 1L,
-    val companyName: String = "مؤسسة التجارة الذكية",
-    val activityType: String = "تجارة عامة وتوزيع",
-    val address: String = "الرياض - المملكة العربية السعودية",
-    val phone: String = "+966 50 123 4567",
-    val email: String = "info@smart-accountant.app",
-    val taxNumber: String = "300123456700003",
-    val baseCurrency: String = "ريال",
-    val baseCurrencySymbol: String = "ر.س",
-    val invoiceHeader: String = "أهلاً وسهلاً بكم - نسعد بخدمتكم",
-    val invoiceFooter: String = "البضاعة المباعة ترد وتستبدل خلال 3 أيام مع إحضار الفاتورة",
+    val companyName: String = "",
+    val activityType: String = "",
+    val address: String = "",
+    val phone: String = "",
+    val email: String = "",
+    val taxNumber: String = "",
+    val baseCurrency: String = "",
+    val baseCurrencySymbol: String = "",
+    val invoiceHeader: String = "",
+    val invoiceFooter: String = "",
     val invoicePrefix: String = "INV-",
     val purchasePrefix: String = "PUR-",
     val receiptPrefix: String = "REC-",
@@ -27,9 +27,9 @@ data class CompanySettings(
     val allowNegativeStock: Boolean = false,
     val defaultCashAccountId: Long = 1L,
     val thermalPaperWidth: Int = 80, // 58 or 80 mm
-    val currentUsername: String = "المدير العام",
+    val currentUsername: String = "",
     val currentUserRole: String = "ADMIN", // ADMIN, ACCOUNTANT, CASHIER
-    val pinCode: String = "1234",
+    val pinCode: String = "",
     val isPinRequired: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis()
 )
@@ -273,4 +273,34 @@ data class AuditLog(
     val user: String,
     val timestamp: Long = System.currentTimeMillis(),
     val details: String
+)
+
+
+@Entity(
+    tableName = "account_categories",
+    indices = [Index(value = ["name"], unique = true)]
+)
+data class AccountCategory(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val name: String,
+    val description: String = "",
+    val sortOrder: Int = 0,
+    val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Entity(
+    tableName = "account_category_links",
+    primaryKeys = ["accountId", "categoryId"],
+    foreignKeys = [
+        ForeignKey(entity = Account::class, parentColumns = ["id"], childColumns = ["accountId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = AccountCategory::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.CASCADE)
+    ],
+    indices = [Index(value = ["categoryId"])]
+)
+data class AccountCategoryLink(
+    val accountId: Long,
+    val categoryId: Long,
+    val createdAt: Long = System.currentTimeMillis()
 )
