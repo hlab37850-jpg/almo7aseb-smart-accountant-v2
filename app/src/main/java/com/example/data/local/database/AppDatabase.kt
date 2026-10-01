@@ -4,12 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.*
 import com.example.data.local.entities.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Database(
     entities = [
@@ -26,9 +22,11 @@ import kotlinx.coroutines.launch
         JournalEntry::class,
         JournalEntryLine::class,
         StockAdjustment::class,
-        AuditLog::class
+        AuditLog::class,
+        AccountCategory::class,
+        AccountCategoryLink::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -45,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun journalEntryDao(): JournalEntryDao
     abstract fun stockAdjustmentDao(): StockAdjustmentDao
     abstract fun auditLogDao(): AuditLogDao
+    abstract fun accountCategoryDao(): AccountCategoryDao
 
     companion object {
         @Volatile
@@ -57,24 +56,14 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "smart_accountant_database.db"
                 )
-                    .addCallback(DatabaseCallback(scope))
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
-
-        private class DatabaseCallback(
-            private val scope: CoroutineScope
-        ) : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        DatabaseSeeder.seedDatabase(database)
-                    }
-                }
-            }
+    }
+}
         }
     }
 }
