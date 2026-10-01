@@ -279,4 +279,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+    val accountCategories: StateFlow<List<AccountCategory>> = repository.accountCategories
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun categoriesForAccount(accountId: Long): Flow<List<AccountCategory>> =
+        repository.categoriesForAccount(accountId)
+
+    fun createCategory(name: String, description: String = "", onDone: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            runCatching { repository.createCategory(name, description) }
+                .onSuccess { onDone?.invoke() }
+                .onFailure { _userMessage.emit("تعذر إنشاء التصنيف: " + (it.message ?: "خطأ غير معروف")) }
+        }
+    }
+
+    fun updateCategory(category: AccountCategory, onDone: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            runCatching { repository.updateCategory(category) }
+                .onSuccess { onDone?.invoke() }
+                .onFailure { _userMessage.emit("تعذر تعديل التصنيف: " + (it.message ?: "خطأ غير معروف")) }
+        }
+    }
+
+    fun deleteCategory(categoryId: Long, onDone: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            runCatching { repository.deactivateCategory(categoryId) }
+                .onSuccess { onDone?.invoke() }
+                .onFailure { _userMessage.emit("تعذر حذف التصنيف: " + (it.message ?: "خطأ غير معروف")) }
+        }
+    }
+
+    fun linkAccountToCategory(accountId: Long, categoryId: Long) {
+        viewModelScope.launch {
+            runCatching { repository.linkAccountCategory(accountId, categoryId) }
+                .onFailure { _userMessage.emit("تعذر ربط الحساب بالتصنيف") }
+        }
+    }
+
+    fun unlinkAccountFromCategory(accountId: Long, categoryId: Long) {
+        viewModelScope.launch {
+            runCatching { repository.unlinkAccountCategory(accountId, categoryId) }
+                .onFailure { _userMessage.emit("تعذر إزالة التصنيف من الحساب") }
+        }
+    }
+
 }
