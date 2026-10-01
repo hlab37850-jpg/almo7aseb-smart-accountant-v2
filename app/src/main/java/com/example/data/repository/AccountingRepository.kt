@@ -157,7 +157,6 @@ class AccountingRepository(private val db: AppDatabase) {
     // Next Document Number Generators
     suspend fun generateNextInvoiceNumber(type: String): String {
         val settings = db.companySettingsDao().getSettingsDirect() ?: CompanySettings()
-        val count = db.invoiceDao().getInvoiceCount() + 1
         val prefix = when (type) {
             "SALE" -> settings.invoicePrefix
             "PURCHASE" -> settings.purchasePrefix
@@ -165,14 +164,25 @@ class AccountingRepository(private val db: AppDatabase) {
             "PURCHASE_RETURN" -> settings.purchaseReturnPrefix
             else -> "DOC-"
         }
-        return "$prefix${String.format("%05d", count)}"
+        var sequence = db.invoiceDao().getInvoiceCount() + 1
+        var candidate: String
+        do {
+            candidate = prefix + String.format("%05d", sequence)
+            sequence++
+        } while (db.invoiceDao().getInvoiceByNumber(candidate) != null)
+        return candidate
     }
 
     suspend fun generateNextVoucherNumber(type: String): String {
         val settings = db.companySettingsDao().getSettingsDirect() ?: CompanySettings()
-        val count = db.voucherDao().getVoucherCount() + 1
         val prefix = if (type == "RECEIPT") settings.receiptPrefix else settings.paymentPrefix
-        return "$prefix${String.format("%05d", count)}"
+        var sequence = db.voucherDao().getVoucherCount() + 1
+        var candidate: String
+        do {
+            candidate = prefix + String.format("%05d", sequence)
+            sequence++
+        } while (db.voucherDao().getVoucherByNumber(candidate) != null)
+        return candidate
     }
 
     // Engine Delegations
