@@ -27,6 +27,15 @@ class AccountingRepository(private val db: AppDatabase) {
     suspend fun saveAccount(account: Account): Long = db.accountDao().insertAccount(account)
     suspend fun updateAccount(account: Account) = db.accountDao().updateAccount(account)
 
+    suspend fun ensureSystemCategories() {
+        val names = listOf("عملاء الثقة", "عملاء الجملة", "عملاء التجزئة")
+        for ((index, name) in names.withIndex()) {
+            if (db.accountCategoryDao().getAll().first().none { it.name == name }) {
+                db.accountCategoryDao().insert(AccountCategory(name = name, sortOrder = index))
+            }
+        }
+    }
+
     suspend fun ensureSystemAccounts(): Long {
         val definitions = listOf(
             "1100" to ("الصندوق الرئيسي" to "CASH"),
