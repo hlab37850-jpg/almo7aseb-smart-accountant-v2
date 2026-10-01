@@ -46,7 +46,7 @@ fun ReportsScreen(
 
     // Calculations
     val totalExpenses = expensesList.sumOf { Math.abs(it.currentBalance) }
-    val effectiveCOGS = if (totalCOGS > 0) totalCOGS else (totalPurchases * 0.75) // estimated if purchases exist
+    val effectiveCOGS = totalCOGS
     val grossProfit = totalSales - effectiveCOGS
     val netProfit = grossProfit - totalExpenses
 

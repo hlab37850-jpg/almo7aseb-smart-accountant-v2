@@ -27,6 +27,68 @@ class AccountingRepository(private val db: AppDatabase) {
     suspend fun saveAccount(account: Account): Long = db.accountDao().insertAccount(account)
     suspend fun updateAccount(account: Account) = db.accountDao().updateAccount(account)
 
+    suspend fun ensureSystemCategories() {
+        val names = listOf("عملاء الثقة", "عملاء الجملة", "عملاء التجزئة")
+        for ((index, name) in names.withIndex()) {
+            if (db.accountCategoryDao().getAll().first().none { it.name == name }) {
+                db.accountCategoryDao().insert(AccountCategory(name = name, sortOrder = index))
+            }
+        }
+    }
+
+    suspend fun ensureSystemAccounts(): Long {
+        val definitions = listOf(
+            "1100" to ("الصندوق الرئيسي" to "CASH"),
+            "1200" to ("البنك الرئيسي" to "BANK"),
+            "1300" to ("المخزون" to "INVENTORY"),
+            "4000" to ("إيرادات المبيعات" to "REVENUE"),
+            "4100" to ("مردودات المبيعات" to "SALES_RETURN"),
+            "5000" to ("المشتريات" to "PURCHASES"),
+            "5100" to ("تكلفة البضاعة المباعة" to "COGS"),
+            "5200" to ("مردودات المشتريات" to "PURCHASE_RETURN"),
+            "3000" to ("رأس المال" to "EQUITY")
+        )
+        for ((code, pair) in definitions) {
+            if (db.accountDao().getAccountByCode(code) == null) {
+                db.accountDao().insertAccount(
+                    Account(
+                        accountCode = code,
+                        name = pair.first,
+                        type = pair.second,
+                        openingBalance = 0.0,
+                        currentBalance = 0.0,
+                        notes = "حساب نظامي"
+                    )
+                )
+            }
+        }
+        return db.accountDao().getAccountByCode("1100")?.id
+            ?: error("تعذر إنشاء حساب الصندوق النظامي")
+    }
+
+    // Account categories (organizational tags; never separate financial accounts)
+    val accountCategories: Flow<List<AccountCategory>> = db.accountCategoryDao().getAll()
+
+    fun categoriesForAccount(accountId: Long): Flow<List<AccountCategory>> =
+        db.accountCategoryDao().getForAccount(accountId)
+
+    fun accountsForCategory(categoryId: Long): Flow<List<Account>> =
+        db.accountCategoryDao().getAccountsForCategory(categoryId)
+
+    suspend fun createCategory(name: String, description: String = ""): Long =
+        db.accountCategoryDao().insert(AccountCategory(name = name.trim(), description = description))
+
+    suspend fun updateCategory(category: AccountCategory) =
+        db.accountCategoryDao().update(category.copy(updatedAt = System.currentTimeMillis()))
+
+    suspend fun deactivateCategory(id: Long) = db.accountCategoryDao().deactivate(id)
+
+    suspend fun linkAccountCategory(accountId: Long, categoryId: Long) =
+        db.accountCategoryDao().link(AccountCategoryLink(accountId, categoryId))
+
+    suspend fun unlinkAccountCategory(accountId: Long, categoryId: Long) =
+        db.accountCategoryDao().unlink(accountId, categoryId)
+
     // Products & Units
     val allProducts: Flow<List<Product>> = db.productDao().getAllProducts()
     val lowStockProducts: Flow<List<Product>> = db.productDao().getLowStockProducts()
@@ -134,7 +196,6 @@ class AccountingRepository(private val db: AppDatabase) {
     // Next Document Number Generators
     suspend fun generateNextInvoiceNumber(type: String): String {
         val settings = db.companySettingsDao().getSettingsDirect() ?: CompanySettings()
-        val count = db.invoiceDao().getInvoiceCount() + 1
         val prefix = when (type) {
             "SALE" -> settings.invoicePrefix
             "PURCHASE" -> settings.purchasePrefix
@@ -142,14 +203,25 @@ class AccountingRepository(private val db: AppDatabase) {
             "PURCHASE_RETURN" -> settings.purchaseReturnPrefix
             else -> "DOC-"
         }
-        return "$prefix${String.format("%05d", count)}"
+        var sequence = db.invoiceDao().getInvoiceCount() + 1
+        var candidate: String
+        do {
+            candidate = prefix + String.format("%05d", sequence)
+            sequence++
+        } while (db.invoiceDao().getInvoiceByNumber(candidate) != null)
+        return candidate
     }
 
     suspend fun generateNextVoucherNumber(type: String): String {
         val settings = db.companySettingsDao().getSettingsDirect() ?: CompanySettings()
-        val count = db.voucherDao().getVoucherCount() + 1
         val prefix = if (type == "RECEIPT") settings.receiptPrefix else settings.paymentPrefix
-        return "$prefix${String.format("%05d", count)}"
+        var sequence = db.voucherDao().getVoucherCount() + 1
+        var candidate: String
+        do {
+            candidate = prefix + String.format("%05d", sequence)
+            sequence++
+        } while (db.voucherDao().getVoucherByNumber(candidate) != null)
+        return candidate
     }
 
     // Engine Delegations

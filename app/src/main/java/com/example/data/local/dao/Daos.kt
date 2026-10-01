@@ -198,6 +198,9 @@ interface VoucherDao {
     @Query("SELECT * FROM vouchers WHERE id = :id LIMIT 1")
     suspend fun getVoucherById(id: Long): Voucher?
 
+    @Query("SELECT * FROM vouchers WHERE voucherNumber = :number LIMIT 1")
+    suspend fun getVoucherByNumber(number: String): Voucher?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVoucher(voucher: Voucher): Long
 
@@ -293,4 +296,38 @@ interface AuditLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLog(log: AuditLog): Long
+}
+
+
+@Dao
+interface AccountCategoryDao {
+    @Query("SELECT * FROM account_categories WHERE isActive = 1 ORDER BY sortOrder ASC, name ASC")
+    fun getAll(): Flow<List<AccountCategory>>
+
+    @Query("SELECT * FROM account_categories WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): AccountCategory?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(category: AccountCategory): Long
+
+    @Update
+    suspend fun update(category: AccountCategory)
+
+    @Query("UPDATE account_categories SET isActive = 0, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun deactivate(id: Long, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT c.* FROM account_categories c INNER JOIN account_category_links l ON c.id = l.categoryId WHERE l.accountId = :accountId AND c.isActive = 1 ORDER BY c.sortOrder, c.name")
+    fun getForAccount(accountId: Long): Flow<List<AccountCategory>>
+
+    @Query("SELECT a.* FROM accounts a INNER JOIN account_category_links l ON a.id = l.accountId WHERE l.categoryId = :categoryId AND a.isActive = 1 ORDER BY a.name")
+    fun getAccountsForCategory(categoryId: Long): Flow<List<Account>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun link(link: AccountCategoryLink)
+
+    @Query("DELETE FROM account_category_links WHERE accountId = :accountId AND categoryId = :categoryId")
+    suspend fun unlink(accountId: Long, categoryId: Long)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM account_category_links WHERE accountId = :accountId AND categoryId = :categoryId)")
+    suspend fun isLinked(accountId: Long, categoryId: Long): Boolean
 }
