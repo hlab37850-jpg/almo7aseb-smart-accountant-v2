@@ -107,9 +107,12 @@ class AccountingEngine(private val db: AppDatabase) {
 
             val salesAccount = db.accountDao().getAccountsByTypeDirect("REVENUE").firstOrNull()
                 ?: error("يجب إنشاء حساب إيرادات قبل تسجيل المبيعات")
+            val inventoryAccount = db.accountDao().getAccountsByTypeDirect("INVENTORY").firstOrNull()
+                ?: error("يجب إنشاء حساب المخزون قبل تسجيل العمليات")
+            val cogsAccount = db.accountDao().getAccountsByTypeDirect("COGS").firstOrNull()
+                ?: error("يجب إنشاء حساب تكلفة البضاعة المباعة قبل تسجيل المبيعات")
             val purchaseAccount = db.accountDao().getAccountsByTypeDirect("PURCHASES").firstOrNull()
-                ?: db.accountDao().getAccountsByTypeDirect("INVENTORY").firstOrNull()
-                ?: error("يجب إنشاء حساب مشتريات/مخزون قبل تسجيل المشتريات")
+                ?: inventoryAccount
 
             val total = invoice.grandTotal
             val paid = invoice.paidAmount
@@ -314,9 +317,14 @@ class AccountingEngine(private val db: AppDatabase) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = partyAccount.id, accountName = partyAccount.name, debit = remaining, credit = 0.0))
                     }
                     lines.add(JournalEntryLine(entryId = entryId, accountId = salesAccount.id, accountName = salesAccount.name, debit = 0.0, credit = total))
+                    val saleCost = itemsWithInvoiceId.sumOf { it.baseQuantity * it.costPrice }
+                    if (saleCost > 0.0) {
+                        lines.add(JournalEntryLine(entryId = entryId, accountId = cogsAccount.id, accountName = cogsAccount.name, debit = saleCost, credit = 0.0))
+                        lines.add(JournalEntryLine(entryId = entryId, accountId = inventoryAccount.id, accountName = inventoryAccount.name, debit = 0.0, credit = saleCost))
+                    }
                 }
                 "PURCHASE" -> {
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = purchaseAccount.id, accountName = purchaseAccount.name, debit = total, credit = 0.0))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = inventoryAccount.id, accountName = inventoryAccount.name, debit = total, credit = 0.0))
                     if (paid > 0) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = cashAccount.id, accountName = cashAccount.name, debit = 0.0, credit = paid))
                     }
@@ -326,6 +334,11 @@ class AccountingEngine(private val db: AppDatabase) {
                 }
                 "SALE_RETURN" -> {
                     lines.add(JournalEntryLine(entryId = entryId, accountId = salesAccount.id, accountName = "مردودات " + salesAccount.name, debit = total, credit = 0.0))
+                    val returnCost = itemsWithInvoiceId.sumOf { it.baseQuantity * it.costPrice }
+                    if (returnCost > 0.0) {
+                        lines.add(JournalEntryLine(entryId = entryId, accountId = inventoryAccount.id, accountName = inventoryAccount.name, debit = returnCost, credit = 0.0))
+                        lines.add(JournalEntryLine(entryId = entryId, accountId = cogsAccount.id, accountName = cogsAccount.name, debit = 0.0, credit = returnCost))
+                    }
                     if (paid > 0) {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = cashAccount.id, accountName = cashAccount.name, debit = 0.0, credit = paid))
                     } else {
@@ -338,7 +351,7 @@ class AccountingEngine(private val db: AppDatabase) {
                     } else {
                         lines.add(JournalEntryLine(entryId = entryId, accountId = partyAccount.id, accountName = partyAccount.name, debit = total, credit = 0.0))
                     }
-                    lines.add(JournalEntryLine(entryId = entryId, accountId = purchaseAccount.id, accountName = "مردودات " + purchaseAccount.name, debit = 0.0, credit = total))
+                    lines.add(JournalEntryLine(entryId = entryId, accountId = inventoryAccount.id, accountName = "مردودات " + inventoryAccount.name, debit = 0.0, credit = total))
                 }
             }
             db.journalEntryDao().insertLines(lines)
