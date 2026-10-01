@@ -33,6 +33,9 @@ class AccountingRepository(private val db: AppDatabase) {
     fun categoriesForAccount(accountId: Long): Flow<List<AccountCategory>> =
         db.accountCategoryDao().getForAccount(accountId)
 
+    fun accountsForCategory(categoryId: Long): Flow<List<Account>> =
+        db.accountCategoryDao().getAccountsForCategory(categoryId)
+
     suspend fun createCategory(name: String, description: String = ""): Long =
         db.accountCategoryDao().insert(AccountCategory(name = name.trim(), description = description))
 
