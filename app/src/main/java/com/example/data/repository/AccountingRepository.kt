@@ -27,6 +27,26 @@ class AccountingRepository(private val db: AppDatabase) {
     suspend fun saveAccount(account: Account): Long = db.accountDao().insertAccount(account)
     suspend fun updateAccount(account: Account) = db.accountDao().updateAccount(account)
 
+    // Account categories (organizational tags; never separate financial accounts)
+    val accountCategories: Flow<List<AccountCategory>> = db.accountCategoryDao().getAll()
+
+    fun categoriesForAccount(accountId: Long): Flow<List<AccountCategory>> =
+        db.accountCategoryDao().getForAccount(accountId)
+
+    suspend fun createCategory(name: String, description: String = ""): Long =
+        db.accountCategoryDao().insert(AccountCategory(name = name.trim(), description = description))
+
+    suspend fun updateCategory(category: AccountCategory) =
+        db.accountCategoryDao().update(category.copy(updatedAt = System.currentTimeMillis()))
+
+    suspend fun deactivateCategory(id: Long) = db.accountCategoryDao().deactivate(id)
+
+    suspend fun linkAccountCategory(accountId: Long, categoryId: Long) =
+        db.accountCategoryDao().link(AccountCategoryLink(accountId, categoryId))
+
+    suspend fun unlinkAccountCategory(accountId: Long, categoryId: Long) =
+        db.accountCategoryDao().unlink(accountId, categoryId)
+
     // Products & Units
     val allProducts: Flow<List<Product>> = db.productDao().getAllProducts()
     val lowStockProducts: Flow<List<Product>> = db.productDao().getLowStockProducts()
